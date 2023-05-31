@@ -1,0 +1,1086 @@
+1.Queue creation msgget()
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<stdio.h>
+main() {
+    int msgid; 
+    key_t key; 
+    int mykey;
+    msgid = msgget((key)|mykey,IPC_CREAT|0);
+    printf("Message queue created with key value %d",msgid);
+}
+
+2 Queue creation with file permission
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<stdio.h>
+int main() {
+    int msgid; 
+    key_t key; 
+    int mykey;
+    msgid = msgget((key),IPC_CREAT|06444);
+    if(msgid < 0) {
+        perror("Message failed");
+    } else {
+        printf("Message queue created with key value %d",msgid);
+    }
+}
+3 send msg from one terminal to another 
+receiver
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<string.h>
+#include<stdlib.h>
+#include<stdio.h>
+
+int main() {
+   
+    struct msgbht {
+        long mtype;
+        char mtext[100];
+    } send, recv;
+
+    int msg,len;
+    msg = msgget((key_t)25,IPC_CREAT|0666); 
+
+   
+    if(msg < 0) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 2;
+    len = strlen(send.mtext);
+    
+    
+    if(msgrcv(msg,&recv,100,1,0) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    
+    if(msgsnd(msg,&send,len,1) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    printf("Message from program 1 is: \n%s\n",recv.mtext);
+}
+
+sender
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<string.h>
+#include<stdlib.h>
+#include<stdio.h>
+
+int main() {
+    
+    struct msgbht {
+        long mtype;
+        char mtext[100];
+    } send, recv;
+
+    int msg,len;
+    msg = msgget((key_t)25,IPC_CREAT|0666);
+    if(msg < 0) {
+        perror("Message failed");
+        exit(1);
+    }
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 1;
+    len = strlen(send.mtext);
+
+    if(msgrcv(msg,&recv,100,2,0) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    if(msgsnd(msg,&send,len,2) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    printf("Message from program 2 is: \n%s\n",recv.mtext);
+}
+
+4 send 4 msg
+sender
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<string.h>
+#include<stdlib.h>
+
+int main() {
+   
+    struct msgbht {
+        long mtype;
+        char mtext[100];
+    } send, recv;
+
+    int msg,len;
+    msg = msgget((key_t)25,IPC_CREAT|0666); 
+
+  
+    if(msg < 0) {
+        perror("Message failed");
+        exit(1);
+    }
+
+    
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 1;
+    len = strlen(send.mtext);
+
+    
+    if(msgsnd(msg,&send,len,1) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+  
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 2;
+    len = strlen(send.mtext);
+
+   
+    if(msgsnd(msg,&send,len,1) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+   
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 3;
+    len = strlen(send.mtext);
+
+   
+    if(msgsnd(msg,&send,len,1) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+
+   
+    strcpy(send.mtext,"I am fine, thank you!");
+    send.mtype = 4;
+    len = strlen(send.mtext);
+
+   
+    if(msgsnd(msg,&send,len,1) == -1) {
+        perror("Message failed");
+        exit(1);
+    }
+}
+
+receiver
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<sys/types.h>
+#include<stdio.h>
+#include<stdlib.h>
+int main() {
+    
+    struct msgbht {
+        long mtype;
+        char mtext[100];
+    } recv;
+
+    int gid;
+    gid = msgget((key_t)25,IPC_CREAT|0666); 
+
+   
+    if(gid < 0) {
+        perror("Message failed");
+        exit(1);
+    }
+    
+    for(int i=0;i<4;i++) {
+        if(msgrcv(gid,&recv,100,0,0) == -1) {
+            printf("Message (%d+1) failed",i);
+            exit(1);
+        }
+        printf("Message %d: %s",i,recv.mtext);
+    }
+}
+
+5 creation of 1 way pipe in a single process
+#include<stdio.h>
+#include<stdlib.h>
+main() {
+    int pipefd[2],n; 
+    char buff[100];
+    pipe(pipefd);
+    printf("\nReadfd=%d",pipefd[0]);
+    printf("\nWritefd=%d",pipefd[1]);
+    write(pipefd[1],"hello, world!",14);
+    n = read(pipefd[0],buff,sizeof(buff));
+    printf("\nSize of data: %d",n);
+    printf("\n Data from data: %s",buff);
+}
+
+6 creation of 1 way pipe in a 2 process
+#include<stdio.h>
+#include<stdlib.h>
+main() {
+    int pipefd[2],n,pid;
+    char buff[100];
+    pipe(pipefd);
+    printf("\nReadfd=%d",pipefd[0]);
+    printf("\nWritefd=%d",pipefd[1]);
+    pid = fork();
+    if(pid == 0) {
+        close(pipefd[0]);
+        printf("\n Child process sending data");
+        write(pipefd[1],"hello, world!",14);
+    } else {
+        close(pipefd[1]);
+        printf("Parent process receives data");
+        n = read(pipefd[0],buff,sizeof(buff));
+        printf("\nData received from child through pipe: %s",buff);
+    }
+}
+
+7 creation of 2 way pipe b/w 2 process
+#include<stdio.h>
+#include<stdlib.h>
+main() {
+    int p1[2],p2[2],n,pid;
+    char buf1[25],buf2[25];
+    pipe(p1);
+    pipe(p2);
+    printf("\nReadfds=%d",p1[0],p2[0]);
+    printf("\nWritefds=%d",p1[1],p2[1]);
+    pid=fork();
+    if(pid == 0) {
+        close(p1[0]);
+        printf("\nChild process sending data");
+        write(p1[1],"Where is HIT?",25);
+        close(p2[1]);
+        read(p2[0],buf1,25);
+        printf("Reply from parent: %s",buf1);
+    } else {
+        close(p1[1]);
+        printf("Parent process receives data");
+        n = read(p1[0],buf2,sizeof(buf2));
+        printf("\nData received from child through pipe: %s",buf2);
+        sleep(3);
+        close(p2[0]);
+        write(p2[1],"in haldia",25);
+        printf("\nReply sent.");
+    }
+}
+
+8 isArmstrong
+#include<stdio.h>
+#include<stdlib.h>
+#include<stdbool.h>
+#include<math.h>
+bool isArmstrong(char input[]) {
+    int num1 = atoi(input);
+    int num2 = num1;
+    int noOfDigits = 0;
+    while(num1 != 0) {
+        noOfDigits++;
+        num1 = num1/10;
+    }
+    int sum = 0;
+    while(num2 != 0) {
+        int mod = num2%10;
+        sum+=pow(mod,noOfDigits);
+        num2 = num2/10;
+    }
+    return (atoi(input)==sum);
+}
+main() {
+    int p1[2],p2[2],n,pid;
+    char buf1[25],buf2[25];
+    pipe(p1);
+    pipe(p2);
+    printf("\nReadfds=%d",p1[0],p2[0]);
+    printf("\nWritefds=%d",p1[1],p2[1]);
+    pid=fork();
+    if(pid == 0) {
+        close(p1[0]);
+        printf("\nChild process sending data");
+        write(p1[1],"Where is HIT?",25);
+        close(p2[1]);
+        read(p2[0],buf1,25);
+        printf("Reply from parent: %s",buf1);
+    } else {
+        close(p1[1]);
+        printf("Parent process receives data");
+        n = read(p1[0],buf2,sizeof(buf2));
+        printf("\nData received from child through pipe: %s",buf2);
+        sleep(3);
+        close(p2[0]);
+        if(isArmstrong(buf2)) {
+            write(p2[1],"yes",25);
+        } else {
+            write(p2[1],"no",25);
+        }
+        printf("\nReply sent");
+    }
+}
+
+9 interprocess comm through fifo
+client
+#include<stdio.h>
+#include<ctype.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fentl.h>
+#include<stdlib.h>
+#include<string.h>
+main() {
+    int wrfd,rdfd,n;
+    char buf[50],line[50];
+    wrfd = open("np1",0_WRONLY);
+    rdfd = open("np2",0_RDONLY);
+    printf("Enter the line of text: ");
+    gets(line);
+    write(wrfd,line,strlen(line));
+    n = read(rdfd,buf,50);
+    buf[n] = '\0';
+    printf("Full duplex client: read from the pipe: %s\n",buf);
+}
+server
+#include<stdio.h>
+#include<ctype.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fentl.h>
+#include<stdlib.h>
+#include<string.h>
+main() {
+    int wrfd,rdfd,n,d,ret_val,count,count1,i=0;
+    char buf[50],buf1[50],kp[2],kp1[2];
+    ret_val = mkfifo("np1",0666);
+    ret_val = mkfifo("np2",0666);
+    rdfd = open("np1",0_RDONLY);
+    wrfd = open("np2",0_WRONLY);
+    n = read(rdfd,buf,50);
+    buf[n] = '\0';
+    printf("Full dusplex server: read from the pipe: %s\n",buf);
+    count = 0;
+    count1 = 0;
+    for(i=0;i<n;i++) {
+        if(buf1[i]=='a' || buf1[i]=='e' || buf1[i]=='i' || buf1[i]=='o' || buf1[i]=='u' || buf1[i]=='A' || buf1[i]=='E' || buf1[i]=='I' || buf1[i]=='O' || buf1[i]=='U') {
+            count++;
+        } else if((buf[i]>64 && buf[i]<91) || (buf[i]>96 && buf[i]<123)) {
+            count1++;
+        }
+        strcat(buf1,"No. of vowels: ");
+        kp[0] = (char)(count+48);
+        kp[1] = '\0';
+        strcat(buf1,kp);
+        kp1[0] = (char)(count+48);
+        kp1[1] = '\0';
+        strcat(buf1,"No. of consonants: ");
+        strcat(buf1,kp1);
+        write(wrfd,buf1,strlen(buf1));
+    }
+}
+ 10 berkely sockets 
+client
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<string.h>
+#include<stdlib.h>
+main(int argc, char *argv[]) {
+    int sockfd; // Socket descriptor
+    struct sockaddr_in serv_addr; 
+    int i;
+    char buf[100]; 
+   
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0) < 0) {
+        printf("Unable to create socket");
+        exit(0);
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[2]);
+    serv_addr.sin_port = htons(atoi(argv[1]));
+  
+    if(connect(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr))<0) {
+        printf("Unable to connect to server.\n");
+        exit(0);
+    }
+   
+    for(i=0;i<100;i++) {
+        buf[i] = '\0';
+    }
+    recv(sockfd,buf,100,0);
+    printf("%s\n",buf);
+    for(i=0;i<100;i++) {
+        buf[i] = '\0';
+    }
+    strcpy(buf,"Message from the client: Hello! Are you ready?");
+    send(sockfd,buf,100,0);
+    clost(sockfd);
+}
+
+server
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#define serv_port 6000
+main(int argc,char *argv[]) {
+    int sockfd,newsockfd; 
+    int clilen;
+    struct sockaddr_in cli_addr, serv_addr; 
+    int i;
+    char buf[100]; 
+    
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0)<0) {
+        printf("Cannot create socket");
+        exit(0);
+    }
+   
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(atoi(argv[1]));
+    
+    if(bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr))<0) {
+        printf("Unable to bind local address");
+        exit(0);
+    }
+   
+    listen(sockfd,5);
+   
+    while(1) {
+        
+        clilen = sizeof(cli_addr);
+        newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr,&clilen);
+        if(newsockfd<0) {
+            printf("Accept error. \n");
+            exit(0);
+        }
+       
+        if(fork()==0) {
+           
+            close(sockfd); 
+            for(i=1;i<100;i++) {
+                buf[i] = '\0';
+            }
+            strcpy(buf,"Message from server: Yes, I am ready.");
+            send(newsockfd,buf,100,0);
+           
+            for(i=1;i<100;i++) {
+                buf[i] = '\0';
+            }
+            recv(newsockfd,buf,100,0);
+            close(newsockfd); // Closing client socket.
+            exit(0);        
+        }
+        close(newsockfd);
+    }
+}
+ 
+11 tcp  sentence reverse
+client
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<sys/types.h>
+#define MAXLINE 20
+#define SERV_PORT 5777
+main(int argc, char *argv) {
+    char sendline[MAXLINE],revline[MAXLINE];
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    sockfd = socket(AF_INET,SOCK_STREAM,0);
+    bzero(&serv_addr,sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = ntohs(SERV_PORT);
+    connect(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    printf("Enter the data to be sent");
+    while(fgets(sendline,MAXLINE,stdin)!=NULL) {
+        write(sockfd,sendline,strlen(send));
+        printf("\nLine sent");
+        read(sockfd,revline,MAXLINE);
+        printf("\nReverse of the given sentence is %s",revline);
+        printf("\n");
+    }
+    exit(0);
+}
+server
+#include<string.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<sys/types.h>
+#define MAXLINE 20
+#define SERV_PORT 5777
+main(int argc, char *argv) {
+    int i,j;
+    ssize_t n;
+    char line[MAXLINE],revline[MAXLINE];
+    int listenfd,connfd,clilen;
+    struct sockaddr_in serv_addr,cliaddr;
+    listenfd = socket(AF_INET,SOCK_STREAM,0);
+    bzero(&serv_addr,sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = ntohs(SERV_PORT);
+    bind(listenfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr));
+    listen(listenfd,1);
+    for(;;) {
+        clilen = sizeof(cliaddr);
+        connfd = accept(listenfd,(struct sockaddr*)&cliaddr, &clilen);
+        printf("Connect to client");
+        while(1) {
+            if(n == read(connfd,line,MAXLINE) == 0) {
+                break;
+            }
+            line[n-1] = '\0';
+            j = 0;
+            for(i = n-2;i>=0;i--) {
+                revline[j++] = line[i];
+            }
+            revline[j] = '\0';
+            write(connfd,revline,n);
+        }
+    }
+}
+
+12 stop & wait
+receiver
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+main(int argc,char *argv[]) {
+    int sockfd; 
+    struct sockaddr_in serv_addr;
+    int i;
+    long int p;
+    char buf[5];
+    printf("Enter the port address");
+    scanf("%d",&p);
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0)<0) {
+        printf("Error creating socket! \n");
+        exit(0);
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(p);
+    if(connect(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr))<0) {
+        printf("Unable to connect to server");
+        exit(0);
+    }
+    while(1) {
+      
+        for(i=0;i<5;i++) {
+            buf[i] = '\0';
+        }
+        recv(sockfd,buf,5,0);
+        printf("FRAME: %s\n",buf);
+        if(buf[0] == '0') {
+            buf[0] = '1';
+        } else {
+            buf[0] = '0';
+        }
+        send(sockfd,buf,5,0);
+    }
+    close(sockfd);
+}
+sender
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+main() {
+    int sockfd,newsockfd; 
+    int clilen;
+    struct sockaddr_in cli_addr,serv_addr;
+    int i,j = 0;
+    long int p;
+    char buf[5],f = '0'; 
+    printf("Enter the port address");
+    scanf("%ld",&p);
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0)<0) {
+        printf("Error creation in socket!");
+        exit(0);
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(p);
+    
+    if(bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr) < 0)) {
+        printf("Error in binding. \n");
+        exit(0);
+    }
+   
+    listen(sockfd,5);
+    clilen = (sizeof(cli_addr));
+    newsockfd = accept(sockfd,(struct sockaddr *)&cli_addr,&clilen);
+    if(newsockfd < 0) {
+        printf("Accept error \n");
+        exit(0);
+    }
+    while(1) { 
+    
+    for(i=0;i<5;i++) {
+        buf[i] = '\0';
+    }
+    recv(newsockfd,buf,5,0);
+    printf("ACK: %s\n",buf);
+    if(f == '0') {
+        f=1;
+    } else {
+        f = '0';
+    }
+    
+    close(newsockfd);
+    close(sockfd);
+    }
+}
+
+13 goback nrq
+receiver
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+main(int argc,char *argv[]) {
+    int sockfd; 
+    struct sockaddr_in serv_addr;
+    int i;
+    long int p;
+    char buf[5]; 
+    char r[8] = {'0','1','2','3','0','1','2','3'};
+    int rf = 0;
+    printf("Enter the port address: ");
+    scanf("%ld",&p);
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0)<0) {
+        printf("Error creating socket! \n");
+        exit(0);
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(p);
+    if(connect(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr))<0) {
+        printf("Unable to connect to server");
+        exit(0);
+    }
+    while(1) {
+   
+        for(i=0;i<5;i++) {
+            buf[i] = '\0';
+        }
+        recv(sockfd,buf,5,0);
+        printf("FRAME: %s\n",buf);
+        while(r[rf] == buf[0]) {
+            rf++;
+        }
+        if(rf == 8) {
+            break;
+        }
+        buf[0] = r[rf];
+        send(sockfd,buf,5,0);
+    }
+    close(sockfd);
+}
+
+sender
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+main(int argc,char *argv[]) {
+    int sockfd,newsockfd; 
+    int clilen;
+    struct sockaddr_in cli_addr, serv_addr;
+    int i,j = 0;
+    long int p;
+    char buf[5];
+    char s[8] = {'0','1','2','3','0','1','2','3'};
+    int sf = 0,sl = 2;
+    printf("Enter the port address: ");
+    scanf("%ld",&p);
+    
+    if(sockfd = socket(AF_INET,SOCK_STREAM,0)<0) {
+        printf("Error creating socket!\n");
+        exit(0);
+    }
+    
+  
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(p);
+   
+    if(bind(sockfd,(struct sockaddr*)&serv_addr,sizeof(serv_addr))<0) {
+        printf("Error in binding \n");
+        exit(0);
+    }
+    
+    listen(sockfd,5);
+    clilen = (sizeof(clilen));
+    newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr,&clilen);
+    if(newsockfd<0) {
+        printf("Accept Error \n");
+        exit(0);
+    }
+    while(1) { 
+    for(i=0;i<5;i++) {
+        buf[i] = '\0';
+    }
+    buf[0] = s[sf];
+    send(newsockfd,buf,5,0);
+   
+    for(i=0;i<5;i++) {
+        buf[i] = '\0';
+    }
+    recv(newsockfd,buf,5,0);
+    printf("ACK: %s\n",buf);
+    while(s[sf]!=buf[0]); {
+        sf++;
+        sl++;
+    }
+    if(sf == 8) {
+        break;
+    }
+    
+    close(newsockfd);
+    close(sockfd);
+    }
+}
+
+14 arm 1-1000
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+
+int isArmstrong(int num) {
+    int originalNum, remainder, result = 0, n = 0;
+
+    originalNum = num;
+
+    
+    while (originalNum != 0) {
+        originalNum /= 10;
+        ++n;
+    }
+
+    originalNum = num;
+
+  
+    while (originalNum != 0) {
+        remainder = originalNum % 10;
+        result += pow(remainder, n);
+        originalNum /= 10;
+    }
+
+    if (result == num)
+        return 1;
+    else
+        return 0;
+}
+
+int main() {
+    int fd1[2], fd2[2]; // File descriptors for two pipes
+
+    if (pipe(fd1) == -1 || pipe(fd2) == -1) {
+        perror("Pipe failed");
+        return 1;
+    }
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    if (pid > 0) {
+       
+        close(fd1[0]); 
+        close(fd2[1]); 
+
+        int number;
+        printf("Armstrong numbers between 1 and 1000 generated by the child process:\n");
+        for (number = 1; number <= 1000; number++) {
+            if (isArmstrong(number)) {
+              
+                write(fd1[1], &number, sizeof(number));
+            }
+        }
+
+        close(fd1[1]); // Close writing end of pipe 1
+
+        int childMsg;
+        while (read(fd2[0], &childMsg, sizeof(childMsg)) > 0) {
+            printf("Parent received: %d\n", childMsg);
+        }
+
+        close(fd2[0]); // Close reading end of pipe 2
+    } else {
+        // Child process
+        close(fd1[1]); // Close writing end of pipe 1
+        close(fd2[0]); // Close reading end of pipe 2
+
+        int parentMsg;
+        while (read(fd1[0], &parentMsg, sizeof(parentMsg)) > 0) {
+            printf("Child received: %d\n", parentMsg);
+            // Write a message to the parent process
+            write(fd2[1], &parentMsg, sizeof(parentMsg));
+        }
+
+        close(fd1[0]); // Close reading end of pipe 1
+        close(fd2[1]); // Close writing end of pipe 2
+    }
+
+    return 0;
+}
+
+
+
+15.) Palindrome check IPC
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+
+#define MAX_SIZE 100
+
+struct message {
+    long mtype;
+    char mtext[MAX_SIZE];
+};
+
+// Function to check if a string is a palindrome
+int isPalindrome(const char* str) {
+    int len = strlen(str) - 1; // Exclude the newline character ('\n')
+    int i, j;
+    for (i = 0, j = len - 1; i < j; i++, j--) {
+        if (str[i] != str[j])
+            return 0;
+    }
+    return 1;
+}
+
+int main() {
+    key_t key;
+    int msgid;
+    struct message msg;
+
+    // Generate a unique key
+    key = ftok(".", 'a');
+
+    // Create a message queue
+    msgid = msgget(key, IPC_CREAT | 0666);
+    if (msgid == -1) {
+        perror("msgget failed");
+        return 1;
+    }
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    if (pid > 0) {
+        // Parent process (sender)
+        msg.mtype = 1;
+
+        printf("Enter a string to send to the receiver: ");
+        fgets(msg.mtext, MAX_SIZE, stdin);
+
+        // Send the message to the message queue
+        msgsnd(msgid, &msg, strlen(msg.mtext) + 1, 0);
+
+        printf("Message sent to the receiver.\n");
+    } else {
+        // Child process (receiver)
+        sleep(1); // Allow some time for the parent to send the message
+
+        // Receive the message from the message queue
+        msgrcv(msgid, &msg, sizeof(msg.mtext), 1, 0);
+
+        printf("Message received from the sender: %s", msg.mtext);
+
+        if (isPalindrome(msg.mtext))
+            printf("The string is a palindrome.\n");
+        else
+            printf("The string is not a palindrome.\n");
+
+        // Remove the message queue
+        msgctl(msgid, IPC_RMID, NULL);
+    }
+
+    return 0;
+}
+
+
+16 vowels & conco
+server
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define FIFO_PATH "/tmp/myfifo"
+#define MAX_BUF_SIZE 100
+
+int main() {
+    int server_fd, client_fd;
+    char buf[MAX_BUF_SIZE];
+
+    // Create the FIFO
+    mkfifo(FIFO_PATH, 0666);
+
+    // Open the FIFO for reading
+    server_fd = open(FIFO_PATH, O_RDONLY);
+    if (server_fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+    // Read the input sentence from the client
+    read(server_fd, buf, MAX_BUF_SIZE);
+
+    // Close the FIFO
+    close(server_fd);
+
+    // Count the number of vowels and consonants in the sentence
+    int vowel_count = 0;
+    int consonant_count = 0;
+    int i;
+    for (i = 0; i < strlen(buf); i++) {
+        char ch = tolower(buf[i]);
+        if (ch >= 'a' && ch <= 'z') {
+            if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u')
+                vowel_count++;
+            else
+                consonant_count++;
+        }
+    }
+
+    // Open the FIFO for writing
+    client_fd = open(FIFO_PATH, O_WRONLY);
+    if (client_fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+    // Send the count of vowels and consonants to the client
+    dprintf(client_fd, "Vowels: %d\nConsonants: %d\n", vowel_count, consonant_count);
+
+    // Close the FIFO
+    close(client_fd);
+
+    // Remove the FIFO
+    unlink(FIFO_PATH);
+
+    return 0;
+}
+
+client
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define FIFO_PATH "/tmp/myfifo"
+#define MAX_BUF_SIZE 100
+
+int main() {
+    int client_fd;
+    char buf[MAX_BUF_SIZE];
+
+    // Open the FIFO for writing
+    client_fd = open(FIFO_PATH, O_WRONLY);
+    if (client_fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+    printf("Enter a sentence: ");
+    fgets(buf, MAX_BUF_SIZE, stdin);
+
+    // Write the input sentence to the server
+    write(client_fd, buf, strlen(buf) + 1);
+
+    // Close the FIFO
+    close(client_fd);
+
+    
+    client_fd = open(FIFO_PATH, O_RDONLY);
+    if (client_fd == -1) {
+        perror("open");
+        return 1;
+    }
+
+   
+    read(client_fd, buf, MAX_BUF_SIZE);
+
+    
+    close(client_fd);
+
+   
+    printf("Count of Vowels and Consonants:\n%s", buf);
+
+    return 0;
+}
+
+17 Queue creation ipc create ipc exc	l
+
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
+#include<stdio.h>
+int main(){
+int msgid;
+key_t key;
+msgid = msgget(key,IPC_CREAT|IPC_EXCL);
+if(msgid<0){
+perror("message failed");
+exit(1);
+}
+else{
+printf("message queue is created with key value %d",msgid);
+}
+}
+
+
